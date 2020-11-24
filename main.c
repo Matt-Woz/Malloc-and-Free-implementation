@@ -1,7 +1,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
 #include <unistd.h>
 
 typedef struct memoryBlock{
@@ -66,8 +65,8 @@ void debugPrint(){
 void *init(size_t size)
 {
     memoryBlock_t *firstBlock;
-    firstBlock = sbrk(8194);
-    firstBlock->size = 8194 - sizeof(memoryBlock_t);
+    firstBlock = sbrk(8192);
+    firstBlock->size = 8192 - sizeof(memoryBlock_t);
     firstBlock->Previous = NULL;
     firstBlock->Next = NULL;
     firstBlock->Flag = 0;
@@ -99,12 +98,12 @@ void *my_malloc(size_t size)
         Latest = currentBlock;
         currentBlock = currentBlock->Next;
     }
-    currentBlock = sbrk(8194);
+    currentBlock = sbrk(8192);
     Latest->Previous->Next = currentBlock;
-    currentBlock->size = 8194 + Latest->size;
+    currentBlock->size = 8192 + Latest->size;
     currentBlock->Previous = Latest->Previous;
     currentBlock->Next = NULL;
-    if(size + sizeof(memoryBlock_t) < 8194)
+    if(size + sizeof(memoryBlock_t) < 8192)
     {
         splitBlock(currentBlock, size);
     }
@@ -112,16 +111,45 @@ void *my_malloc(size_t size)
 }
 
 void my_free(void *ptr)
-{}
+{
+    memoryBlock_t *current = (void*)((long)ptr - sizeof(memoryBlock_t));
+    current->Flag = 0;
+    void *top = sbrk(0);
+    if(current >= First && (void*) current <= top)
+    {
+        if(current->Next->Flag == 0)
+        {
+            current->size = current->size + current->Next->size + sizeof(memoryBlock_t);
+            current->Next = current->Next->Next;
+            if(current->Next != NULL && current->Next->Next != NULL)
+            {
+                current->Next->Next->Previous = current;
+            }
+        }
+        if(current->Previous != NULL && current->Previous->Flag == 0)
+        {
+            current->Previous->Next = current->Next;
+            current->Previous->size = current->Previous->size + current->size + sizeof(memoryBlock_t);
+            current->Previous->Next = current->Next;
+            if(current->Previous->Previous != NULL)
+            {
+                current->Previous->Previous->Next = current;
+            }
+
+        }
+
+    }
+}
 
 int main()
 {
-    my_malloc(22);
-    my_malloc(10);
-    my_malloc(2000);
-    my_malloc(3000);
-    my_malloc(5000);
-    my_malloc(8192);
+    int *A = my_malloc(3000);
+    int *B = my_malloc(6000);
+    my_free(A);
+    my_free(B);
+    int *C = my_malloc(3000);
+    my_free(C);
+    int *D = my_malloc(6000);
     debugPrint();
 
 
