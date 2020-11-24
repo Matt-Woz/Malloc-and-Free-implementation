@@ -13,29 +13,6 @@ typedef struct memoryBlock{
 memoryBlock_t *First = NULL;
 
 
-void removeFromList(memoryBlock_t *Block) {
- //   printf("Remove");
-    Block->Flag = 1;
-    if (Block->Previous != NULL) //If block has a previous block
-    {
-        Block->Previous->Next = Block->Next;
-        if (Block->Next != NULL) //If block has next
-        {
-            Block->Next->Previous = Block->Previous;
-        }
-    } else if (Block->Previous == NULL) //If block does not have previous
-    {
-        if (Block->Next != NULL) //If block has previous
-        {
-            First = Block->Next;
-            Block->Next->Previous = Block->Previous;
-        } else if (Block->Next == NULL) {
-            First = NULL;
-
-        }
-    }
-}
-
 void splitBlock(memoryBlock_t *Block, size_t size)
 {
     memoryBlock_t *newBlock = ((void*) Block + size + sizeof(memoryBlock_t)); //Right -> New free
@@ -88,7 +65,7 @@ void *my_malloc(size_t size)
         if (currentBlock->Flag == 0) {
             if (currentBlock->size + sizeof(memoryBlock_t) == size) //If perfect size
             {
-                removeFromList(currentBlock);
+               currentBlock->Flag = 1;
                 return ((void *) ((long) currentBlock + sizeof(memoryBlock_t)));
             } else if (currentBlock->size + sizeof(memoryBlock_t) > size) {
                 splitBlock(currentBlock, size);
@@ -143,13 +120,12 @@ void my_free(void *ptr)
 
 int main()
 {
-    int *A = my_malloc(3000);
-    int *B = my_malloc(6000);
-    my_free(A);
+    char *ptr;
+    int *A = my_malloc(40);
+    int *B = my_malloc(60);
+    int*C = my_malloc(100);
     my_free(B);
-    int *C = my_malloc(3000);
-    my_free(C);
-    int *D = my_malloc(6000);
+    ptr = my_malloc(92);
     debugPrint();
 
 
