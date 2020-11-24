@@ -37,51 +37,22 @@ void removeFromList(memoryBlock_t *Block) {
     }
 }
 
-void addToList(memoryBlock_t *Block)
-{
-//    printf("Add");
-    Block->Next = NULL;
-    Block->Previous = NULL;
-    Block->Flag = 0;
-    if(First == NULL)
-    {
-        Block->Next = First;
-        First = Block;
-    }
-    else if (First != NULL)
-    {
-        memoryBlock_t *currentBlock;
-        currentBlock = First;
-        while(currentBlock->Next != NULL) //Infinite loop
-        {
-            currentBlock = currentBlock->Next;
-        }
-        currentBlock->Next = Block;
-        Block->Previous = currentBlock;
-    }
-}
-
-void merge()
-{}
-
 void splitBlock(memoryBlock_t *Block, size_t size)
 {
-   // printf("Split");
-    memoryBlock_t *newBlock = ((void*) Block + size + sizeof(memoryBlock_t));
+    memoryBlock_t *newBlock = ((void*) Block + size + sizeof(memoryBlock_t)); //Right -> New free
     newBlock->size = (Block->size)- sizeof(memoryBlock_t) - size;
     newBlock->Flag = 0;
     newBlock->Previous = Block;
     Block->size = size;
     Block->Flag = 1;
     Block->Next = newBlock;
-   // return newBlock;
 
 }
 void debugPrint(){
     memoryBlock_t *temp = First;
     int i = 0;
     while(temp != NULL){
-        printf("%d - %p | previous - %p | next - %p | size - %d | flag - %d ", i,temp,temp->Previous,temp->Next, temp->size, temp->Flag);
+        printf("%d - %p | previous - %p | next - %p | size - %zu | flag - %d ", i,temp,temp->Previous,temp->Next, temp->size, temp->Flag);
         unsigned char *debug = (unsigned char*)temp;
         for (int j = 0; j < temp->size + sizeof(memoryBlock_t); j++){
             printf("%02x",debug[j]);
@@ -92,13 +63,29 @@ void debugPrint(){
     }
 }
 
+void *init(size_t size)
+{
+    memoryBlock_t *firstBlock;
+    firstBlock = sbrk(8194);
+    firstBlock->size = 8194 - sizeof(memoryBlock_t);
+    firstBlock->Previous = NULL;
+    firstBlock->Next = NULL;
+    firstBlock->Flag = 0;
+    splitBlock(firstBlock, size);
+    return firstBlock;
+}
+
 void *my_malloc(size_t size)
 {
+    if (First == NULL)
+    {
+        First = init(size);
+        return ((void *) ((long) First + sizeof(memoryBlock_t)));
+    }
     memoryBlock_t *currentBlock;
-    memoryBlock_t *newBlock;
+    memoryBlock_t *Latest;
     currentBlock = First;
     while(currentBlock != NULL) {
-      //  printf("I like you");
         if (currentBlock->Flag == 0) {
             if (currentBlock->size + sizeof(memoryBlock_t) == size) //If perfect size
             {
@@ -106,28 +93,22 @@ void *my_malloc(size_t size)
                 return ((void *) ((long) currentBlock + sizeof(memoryBlock_t)));
             } else if (currentBlock->size + sizeof(memoryBlock_t) > size) {
                 splitBlock(currentBlock, size);
-                //addToList(newBlock);
                 return ((void *) ((long) currentBlock + sizeof(memoryBlock_t)));
             }
-
         }
+        Latest = currentBlock;
         currentBlock = currentBlock->Next;
     }
-//    printf("Howdy");
     currentBlock = sbrk(8194);
-    printf("SBRK\n");
-      currentBlock->size = 8194 - sizeof(memoryBlock_t);
-        currentBlock->Previous = NULL;
-        currentBlock->Next = NULL;
-        currentBlock-> Flag = 1;
-        First = currentBlock;
-        if(size + sizeof(memoryBlock_t) < 8194)
-        {
-            splitBlock(currentBlock, size);
-           // newBlock = splitBlock(currentBlock, size);
-          //  addToList(newBlock);
-        }
-        return ((void *)((long)currentBlock + sizeof(memoryBlock_t)));
+    Latest->Previous->Next = currentBlock;
+    currentBlock->size = 8194 + Latest->size;
+    currentBlock->Previous = Latest->Previous;
+    currentBlock->Next = NULL;
+    if(size + sizeof(memoryBlock_t) < 8194)
+    {
+        splitBlock(currentBlock, size);
+    }
+    return ((void *)((long)currentBlock + sizeof(memoryBlock_t)));
 }
 
 void my_free(void *ptr)
@@ -139,6 +120,8 @@ int main()
     my_malloc(10);
     my_malloc(2000);
     my_malloc(3000);
+    my_malloc(5000);
+    my_malloc(8192);
     debugPrint();
 
 
