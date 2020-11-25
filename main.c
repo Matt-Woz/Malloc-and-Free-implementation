@@ -53,6 +53,8 @@ void *init(size_t size)
 
 void *my_malloc(size_t size)
 {
+    memoryBlock_t *Lists[8];
+
     if (First == NULL)
     {
         First = init(size);
