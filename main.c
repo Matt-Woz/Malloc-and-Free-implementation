@@ -18,6 +18,7 @@ void splitBlock(memoryBlock_t *Block, size_t size)
     memoryBlock_t *newBlock = ((void*) Block + size + sizeof(memoryBlock_t)); //Right -> New free
     newBlock->size = (Block->size)- sizeof(memoryBlock_t) - size;
     newBlock->Flag = 0;
+    newBlock->Next = Block->Next;
     newBlock->Previous = Block;
     Block->size = size;
     Block->Flag = 1;
@@ -55,27 +56,40 @@ void *my_malloc(size_t size)
 {
     memoryBlock_t *Lists[8];
 
+
     if (First == NULL)
     {
         First = init(size);
         return ((void *) ((long) First + sizeof(memoryBlock_t)));
     }
     memoryBlock_t *currentBlock;
+    memoryBlock_t *smallest;
+    memoryBlock_t *firstFit;
+    int split = 0;
     memoryBlock_t *Latest;
     currentBlock = First;
+    smallest = currentBlock;
     while(currentBlock != NULL) {
         if (currentBlock->Flag == 0) {
             if (currentBlock->size + sizeof(memoryBlock_t) == size) //If perfect size
             {
                currentBlock->Flag = 1;
                 return ((void *) ((long) currentBlock + sizeof(memoryBlock_t)));
-            } else if (currentBlock->size + sizeof(memoryBlock_t) > size) {
-                splitBlock(currentBlock, size);
-                return ((void *) ((long) currentBlock + sizeof(memoryBlock_t)));
+            } else if (currentBlock->size > sizeof(memoryBlock_t)  + size) { //Block fits in free area
+                split = 1;
+                if(currentBlock->size < smallest->size || smallest == First)
+                {
+                    smallest = currentBlock;
+                }
             }
         }
         Latest = currentBlock;
         currentBlock = currentBlock->Next;
+    }
+    if(split == 1)
+    {
+            splitBlock(smallest, size);
+            return ((void *)((long) smallest + sizeof(memoryBlock_t)));
     }
     currentBlock = sbrk(8192);
     Latest->Previous->Next = currentBlock;
@@ -96,7 +110,7 @@ void my_free(void *ptr)
     void *top = sbrk(0);
     if(current >= First && (void*) current <= top)
     {
-        if(current->Next->Flag == 0)
+        if(current->Next != NULL && current->Next->Flag == 0)
         {
             current->size = current->size + current->Next->size + sizeof(memoryBlock_t);
             current->Next = current->Next->Next;
@@ -122,12 +136,14 @@ void my_free(void *ptr)
 
 int main()
 {
-    char *ptr;
-    int *A = my_malloc(40);
-    int *B = my_malloc(60);
-    int*C = my_malloc(100);
+    int *A = my_malloc(60);
+    int *B = my_malloc(200);
+    int *C = my_malloc(20);
+    int *D = my_malloc(150);
+    int *E = my_malloc(30);
     my_free(B);
-    ptr = my_malloc(92);
+    my_free(D);
+    int *F = my_malloc(40);
     debugPrint();
 
 
