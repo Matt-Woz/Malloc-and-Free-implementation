@@ -1,3 +1,0 @@
-/home/wozakows/CLionProjects/my_malloc/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/wozakows/CLionProjects/my_malloc/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/wozakows/CLionProjects/my_malloc/cmake-build-debug/CMakeFiles/my_malloc.dir
